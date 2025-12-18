@@ -1,0 +1,41 @@
+# --- Python e Ambiente Virtual ---
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# --- Sistema Operacional (Mac) ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# --- Pastas do Projeto (Onde ficam as fotos reais) ---
+# Ignora todo o conteudo dessas pastas
+temp_workspace/
+found_photos_final/
+my_reference_faces/
+
+# --- Configurações Pessoais ---
+config.py
+
+# --- BLOQUEIO GERAL DE MÍDIA (Segurança Extra) ---
+# Garante que nenhum arquivo desse tipo suba, mesmo fora das pastas acima
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.heic
+*.raw
+*.CR2
+*.NEF
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.flv
+*.wmv
+*.zip
