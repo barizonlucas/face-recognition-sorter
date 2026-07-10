@@ -1,76 +1,82 @@
-# Face Recognition Batch Processor
+# Face Recognition Sorter
 
-An automated Python pipeline designed to organize large photo backups (specifically Google Photos Takeout archives). It iterates through ZIP files stored on a network drive (NAS), identifies specific faces using biometric recognition, extracts matching photos to a local drive, and re-uploads the remaining non-matching photos back to the network.
+![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-## 🚀 Features
+## 🎯 Business Value & Use Case
 
-- **Batch ZIP Processing:** Automatically handles multiple `.zip` archives from a network source (SMB/TrueNAS).
-- **Biometric Recognition:** Uses `dlib` and `face_recognition` for high-accuracy detection.
-- **Multi-Reference Support:** Accepts a folder of reference images (e.g., with/without glasses, different angles) to improve detection accuracy.
-- **Smart Resume:** Automatically skips ZIP files that have already been processed to avoid redundancy.
-- **Network Resilience:** Includes retry logic and robust file handling (`shutil.copyfile`) to prevent timeouts and metadata errors on SMB shares.
-- **Privacy First:** All processing happens locally. No data is sent to external cloud APIs.
+Event photographers, media managers, and archivists often spend hours manually sifting through thousands of photos to find pictures of specific individuals (e.g., a bride at a wedding, a keynote speaker at a conference, or a VIP client). **Face Recognition Sorter** automates this tedious process. 
 
-## 🛠️ Prerequisites
+By leveraging state-of-the-art biometric detection, this tool scans vast directories of unstructured images and automatically extracts all photos containing a target person. What used to take days of manual labor can now be achieved in minutes with high accuracy.
 
-- **Python 3.9+**
-- **CMake** (Required to compile `dlib`)
-  - *macOS:* `brew install cmake`
-  - *Windows:* Install via [cmake.org](https://cmake.org) (Add to PATH)
-  - *Linux:* `sudo apt-get install cmake`
+## 🛠️ Technical Architecture
+
+- **Core Engine:** Built on top of `dlib` and the `face_recognition` library, enabling deep-learning-based face encoding and high-accuracy biometric comparison.
+- **Robust CLI & Config Management:** Utilizes Python's native `argparse` for flexible command-line execution. It elegantly falls back to environment variables loaded via `python-dotenv`, ensuring that automated deployments or repeated batch jobs can run seamlessly without verbose arguments.
+- **Error Resiliency:** Implements standard Python `logging` and comprehensive `try/except` handlers. Corrupted files or images without detectable faces will emit warnings rather than crashing the entire batch process.
 
 ## 📦 Installation
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/YOUR_USERNAME/face-recognition-sorter.git](https://github.com/YOUR_USERNAME/face-recognition-sorter.git)
+   git clone https://github.com/YOUR_USERNAME/face-recognition-sorter.git
    cd face-recognition-sorter
+   ```
 
-2. **Set up the Virtual Environment:**
+2. **Set up a Virtual Environment:**
    ```bash
    python3 -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
+   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+   ```
 
-3. **Install Dependencies:** Note: Installing `dlib` may take a few minutes as it compiles C++ code.
+3. **Install Dependencies:**
+   *Note: `dlib` requires CMake to compile C++ code. If it fails, install CMake via `brew install cmake` (Mac) or `sudo apt-get install cmake` (Linux).*
    ```bash
-   pip install cmake dlib face_recognition opencv-python
+   pip install -r requirements.txt
+   ```
 
 ## ⚙️ Configuration
-To ensure security and privacy, this project separates configuration from code. Do not commit your real paths to GitHub.
 
-1. **Create your configuration file:** Duplicate the example file to create your local config.
+To streamline repeated tasks, you can configure default paths using environment variables.
+
+1. Create your environment file from the template:
    ```bash
-   cp config_example.py config.py
+   cp .env.example .env
+   ```
+2. Edit the `.env` file to set your default `INPUT_DIR`, `OUTPUT_DIR`, and matching `TOLERANCE`.
 
-2. **Edit config.py:** Open the file and update the variables with your local and network paths:
-   ```python
-   # config.py
-    NETWORK_SOURCE_DIR = "/Volumes/server/backups/google_photos" # Where the original ZIPs are
-    NAS_OUTPUT_DIR = "/Volumes/server/backups/processed"         # Where to save photos WITHOUT the target face
-    FINAL_DESTINATION = "found_photos_local"                     # Where to save photos WITH the target face
-    REFERENCE_DIR = "my_reference_faces"                         # Folder containing your reference photos
-
-3. **Add Reference Photos:** Create the folder defined in `REFERENCE_DIR` (e.g., `my_reference_faces`) and add 3-5 photos of the person you want to find.
-- Tip: Use photos with different lighting and angles for better results.
+3. **Add Reference Photos:** Create a folder named `my_reference_faces` (or as defined in your arguments) and place 2-4 clear photos of the target individual inside.
 
 ## ▶️ Usage
-Once configured, simply run the main script:
-   ```bash
-   python3 batch_processor.py
 
-### Workflow:
-1. The script copies a ZIP file from the NAS to the local machine (for performance).
-2. Extracts contents to a temporary workspace.
-3. Scans all images for matches against your reference faces.
-4. Moves matching photos to your local FINAL_DESTINATION.
-5. Zips the remaining photos into a new archive (e.g., remainder_001.zip).
-6. Uploads the new ZIP back to the NAS_OUTPUT_DIR.
-7. Cleans up temporary files and proceeds to the next batch.
+You can run the script purely via Command Line Arguments, which will override any variables set in your `.env` file.
+
+**Basic Usage:**
+```bash
+python main.py --input ./raw_photos --output ./sorted_matches
+```
+
+**Advanced Usage with Custom Reference and Tolerance:**
+```bash
+python main.py --input /Volumes/Drive/Event_Photos \
+               --output ~/Desktop/VIP_Client \
+               --reference ./vip_references \
+               --tolerance 0.5
+```
+*(Note: A lower tolerance like 0.5 is stricter, reducing false positives. The default is 0.6.)*
 
 ## 🛡️ Privacy & Security
-This repository includes a strict `.gitignore` file to prevent accidental upload of sensitive data.
-- Ignored: All image formats (`.jpg`, `.png`, etc.), ZIP files, config files containing passwords/paths, and system files.
-- Safe to Commit: Python scripts (`.py`), documentation (`.md`), and example configs.
+All processing happens 100% locally on your machine. No images or biometric data are ever transmitted to external cloud APIs. The repository includes a pre-configured `.gitignore` to strictly exclude sensitive image formats (`.jpg`, `.png`, etc.) and `.env` files from being accidentally committed.
+
+## 🏗️ Origins & Scale (Real-World Engineering)
+This project was born out of a demanding infrastructure challenge. The original architecture was engineered to process massive, multi-gigabyte `.zip` data dumps (such as Google Takeout archives) directly over a Network Attached Storage (NAS) via SMB protocols.
+
+In its initial production environment, the pipeline successfully managed rigorous edge cases, including:
+- Intermittent network instability and dropped SMB connections.
+- Heavy sequential I/O operations across network drives without corrupting data.
+- State-management to resume interrupted, long-running batch processes.
+
+**Product Trade-off for Open Source:** For this public release, the codebase was intentionally refactored and simplified into a universal local directory scanner. This strategic pivot maximizes reproducibility, community adoption, and Developer Experience (DX), allowing engineers and recruiters to run and evaluate the core biometric engine without requiring a complex, specialized home-server setup.
 
 ## 📄 License
 MIT License
